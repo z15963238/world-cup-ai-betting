@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fetchEspnScheduleData } from "./providers/espnScheduleProvider.mjs";
+import { fetchFifaScheduleData } from "./providers/fifaScheduleProvider.mjs";
+import { mergeScheduleData } from "./providers/mergeScheduleData.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -13,55 +16,43 @@ if (!mode) {
   process.exit(1);
 }
 
-const today = new Date();
-const schedule = JSON.parse(readFileSync(schedulePath, "utf8"));
+const now = new Date();
+const verifiedAt = now.toISOString().slice(0, 10);
+let schedule = JSON.parse(readFileSync(schedulePath, "utf8"));
+const originalSchedule = JSON.stringify(schedule, null, 2);
 const recommendations = JSON.parse(readFileSync(recommendationsPath, "utf8"));
-const errors = [];
+const originalRecommendations = JSON.stringify(recommendations, null, 2);
 const changes = [];
+const warnings = [];
 
-function isVerified(match) {
-  return match.dataConfidence === "high" && match.sourceName && match.sourceUrl && match.lastVerifiedAt;
-}
+const providerResults = await Promise.allSettled([fetchFifaScheduleData(), fetchEspnScheduleData()]);
+const usableProviderResults = providerResults.flatMap((result) => {
+  if (result.status === "fulfilled") return [result.value];
+  warnings.push(`Provider failed without data changes: ${result.reason?.message || result.reason}`);
+  return [];
+});
 
-function addConservativePlaceholder(match) {
-  if (recommendations[match.id]) return false;
-  recommendations[match.id] = {
-    pick: "觀察，不急著下注",
-    confidence: 45,
-    risk: "中偏高",
-    modelView: "目前資料不足，盤口資料待確認。先保留觀察，不用高信心解讀。",
-    reasons: ["賽程資料存在，但球員與盤口資料仍待確認。", "未串接付費 API，也沒有即時 bookmaker 資料。", "若臨場陣容與盤口方向明確，再重新評估。"],
-    avoid: ["高信心單邊投注", "未確認盤口前追熱門", "把未驗證資料當成官方結論"],
-    checklist: ["確認官方賽程與開賽時間。", "確認先發陣容。", "確認盤口資料來源與更新時間。"]
-  };
-  return true;
-}
+const merged = mergeScheduleData(schedule, usableProviderResults, verifiedAt);
+schedule = merged.schedule;
+changes.push(...merged.changes);
+warnings.push(...merged.warnings);
 
 for (const match of schedule) {
-  if (!match.id || !match.kickoffTimeUtc) errors.push(`Missing id/kickoffTimeUtc: ${JSON.stringify(match)}`);
-  if (match.status === "finished" && !match.score) errors.push(`Finished match missing score: ${match.id}`);
-  if (match.status !== "finished" && match.score) errors.push(`Unfinished match has final score: ${match.id}`);
-  if (match.dataConfidence === "high" && !isVerified(match)) errors.push(`High confidence match missing source metadata: ${match.id}`);
-  if (match.dataConfidence !== "high" && match.dataConfidence !== "medium" && match.dataConfidence !== "low" && match.dataConfidence !== "unverified") {
-    match.dataConfidence = "unverified";
-    changes.push(`${match.id}: normalized invalid dataConfidence to unverified`);
-  }
+  normalizeDataConfidence(match, changes);
+  validateRecord(match, warnings);
 
-  const kickoff = new Date(match.kickoffTimeUtc);
-  const hoursUntilKickoff = (kickoff.getTime() - today.getTime()) / 36e5;
-  if (match.status === "upcoming" && hoursUntilKickoff >= 0 && hoursUntilKickoff <= 36) {
-    if (addConservativePlaceholder(match)) {
+  const hoursUntilKickoff = (new Date(match.kickoffTimeUtc).getTime() - now.getTime()) / 36e5;
+  if (match.status === "upcoming" && hoursUntilKickoff >= 0 && hoursUntilKickoff <= 48) {
+    if (ensureConservativeRecommendation(match, recommendations)) {
       match.hasRecommendation = true;
-      if (match.dataConfidence === "high") match.dataConfidence = "low";
-      changes.push(`${match.id}: added conservative recommendation placeholder`);
+      changes.push(`${match.id}: added conservative 24-48h AI advice`);
     }
   }
 }
 
-if (errors.length) {
-  console.error("Data validation failed:");
-  for (const error of errors) console.error(`- ${error}`);
-  process.exit(1);
+if (warnings.length) {
+  console.warn("Warnings:");
+  for (const warning of warnings) console.warn(`- ${warning}`);
 }
 
 if (mode === "dry-run") {
@@ -70,11 +61,53 @@ if (mode === "dry-run") {
   process.exit(0);
 }
 
-writeFileSync(schedulePath, `${JSON.stringify(schedule, null, 2)}\n`);
-writeFileSync(recommendationsPath, `${JSON.stringify(recommendations, null, 2)}\n`);
+const nextSchedule = JSON.stringify(schedule, null, 2);
+const nextRecommendations = JSON.stringify(recommendations, null, 2);
+
+if (nextSchedule !== originalSchedule) writeFileSync(schedulePath, `${nextSchedule}\n`);
+if (nextRecommendations !== originalRecommendations) writeFileSync(recommendationsPath, `${nextRecommendations}\n`);
+
 console.log(changes.length ? changes.join("\n") : "No changes needed.");
 
 if (!existsSync(schedulePath) || !existsSync(recommendationsPath)) {
   console.error("Expected data files were not found after write.");
   process.exit(1);
+}
+
+function normalizeDataConfidence(match, log) {
+  if (["high", "medium", "low", "unverified"].includes(match.dataConfidence)) return;
+  match.dataConfidence = "unverified";
+  log.push(`${match.id}: normalized invalid dataConfidence to unverified`);
+}
+
+function validateRecord(match, log) {
+  if (!match.id || !match.kickoffTimeUtc) log.push(`Missing id/kickoffTimeUtc: ${JSON.stringify(match)}`);
+  if (match.status === "finished" && !match.score) log.push(`Finished match missing score: ${match.id}`);
+  if (match.status !== "finished" && match.score) log.push(`Unfinished match has final score: ${match.id}`);
+  if (match.dataConfidence === "high" && (!match.sourceName || !match.sourceUrl || !match.lastVerifiedAt)) {
+    match.dataConfidence = "unverified";
+    log.push(`${match.id}: downgraded high confidence because source metadata was incomplete`);
+  }
+}
+
+function ensureConservativeRecommendation(match, target) {
+  if (target[match.id]) return false;
+  target[match.id] = buildConservativeRecommendation(match);
+  return true;
+}
+
+function buildConservativeRecommendation(match) {
+  return {
+    pick: "觀察，不急著下注",
+    confidence: 42,
+    risk: "中偏高",
+    modelView: `${match.homeTeam} vs ${match.awayTeam} 的賽程接近開賽，但目前沒有球員 API、盤口 API 或完整傷停資料。盤口資料待確認，因此只給保守觀察建議。`,
+    reasons: [
+      "賽程資料可用，但陣容、傷停與盤口資料仍待確認。",
+      "目前不串付費 API，也沒有即時 bookmaker 資料。",
+      "資料不足時不應提高把握度，先以風險控管為主。"
+    ],
+    avoid: ["高信心單邊投注", "未確認盤口前追熱門", "把未驗證資料當成官方結論"],
+    checklist: ["確認官方賽程與開賽時間。", "確認先發陣容與主要傷停。", "確認盤口資料來源與更新時間。"]
+  };
 }

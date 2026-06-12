@@ -50,6 +50,9 @@ const worldCupScheduleSource = readFileSync(join(root, "src/lib/data/worldCupSch
 const worldCupScheduleJson = readFileSync(join(root, "src/lib/data/worldCupSchedule.json"), "utf8");
 const recommendationsJson = readFileSync(join(root, "src/lib/data/recommendations.json"), "utf8");
 const updateScript = readFileSync(join(root, "scripts/update-worldcup-data.mjs"), "utf8");
+const fifaProvider = readFileSync(join(root, "scripts/providers/fifaScheduleProvider.mjs"), "utf8");
+const espnProvider = readFileSync(join(root, "scripts/providers/espnScheduleProvider.mjs"), "utf8");
+const mergeProvider = readFileSync(join(root, "scripts/providers/mergeScheduleData.mjs"), "utf8");
 const worldCupScheduleRecords = JSON.parse(worldCupScheduleJson);
 const recommendationRecords = JSON.parse(recommendationsJson);
 const scheduleValidation = readFileSync(join(root, "src/lib/data/validateWorldCupSchedule.ts"), "utf8");
@@ -161,6 +164,18 @@ for (const id of ["canada-bosnia-herzegovina", "usa-paraguay"]) {
 
 for (const field of ["--dry-run", "--write", "dataConfidence", "unverified"]) {
   if (!updateScript.includes(field)) throw new Error(`Update script missing ${field}`);
+}
+for (const field of ["fetchFifaScheduleData", "FIFA official scores fixtures"]) {
+  if (!fifaProvider.includes(field)) throw new Error(`FIFA provider missing ${field}`);
+}
+for (const field of ["fetchEspnScheduleData", "ESPN fixtures/results"]) {
+  if (!espnProvider.includes(field)) throw new Error(`ESPN provider missing ${field}`);
+}
+for (const field of ["mergeScheduleData", "hasMatchingFifaAndEspn", "kept existing high-confidence data"]) {
+  if (!mergeProvider.includes(field)) throw new Error(`Merge provider missing ${field}`);
+}
+for (const field of ["24-48h", "盤口資料待確認", "confidence: 42"]) {
+  if (!updateScript.includes(field)) throw new Error(`Update script missing conservative advice behavior: ${field}`);
 }
 
 console.log("Smoke tests passed");

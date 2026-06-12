@@ -36,6 +36,7 @@
 - v1.4.5 improved dev server stability by clearing stale `.next`, added a safe `scripts/stop-dev.ps1`, corrected upcoming fixtures, and added conservative AI advice for Canada vs Bosnia and Herzegovina and USA vs Paraguay.
 - v1.5 prepared the project for public Vercel demo deployment: static frontend data only, no APIs, no secrets, no login, no betting platform integration.
 - v1.6 added an automated data update scaffold: JSON schedule/recommendation files, dry-run/write update script, GitHub Actions schedule, and auto-update documentation.
+- v1.6.1 added public read-only FIFA/ESPN provider attempts, non-fatal provider fallback, merge protection for high-confidence records, and conservative 24-48 hour AI advice generation.
 
 ## Bug Fix Pass
 
@@ -65,6 +66,7 @@
 - `scripts/smoke-test.mjs`: Prevents the incorrect Canada vs Japan and USA vs Ghana fixtures from returning, and verifies Canada vs Bosnia and Herzegovina plus USA vs Paraguay have homepage AI recommendations.
 - `npm run build`: Confirms the app can build with the standard Next.js build path used by Vercel.
 - `node scripts/update-worldcup-data.mjs --dry-run`: Checks the update path without writing files or contacting paid APIs.
+- `scripts/providers/*.mjs`: Attempts public read-only schedule/result fetches without API keys or login.
 - `npm audit`: Reports 5 dependency-chain vulnerabilities, 1 moderate and 4 high. No automatic `audit fix --force` was applied because it may introduce breaking dependency upgrades outside this bug-fix pass.
 - `npm run dev`: Not run during this pass because the request asked for lint, typecheck, and build.
 
@@ -96,3 +98,4 @@
 - Future fixtures marked `pending` must be re-verified before being treated as confirmed.
 - Public demo deployment still depends on manually maintained frontend data until official read-only APIs are integrated.
 - Auto-update currently uses a provider scaffold and JSON validation; it does not yet fetch live official data.
+- Public provider parsing depends on page structure and may return no records; failure is intentionally non-fatal.

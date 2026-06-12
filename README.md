@@ -73,7 +73,7 @@ Write JSON data updates:
 node scripts/update-worldcup-data.mjs --write
 ```
 
-GitHub Actions can run this update script twice per day and commit changed JSON data. Vercel can redeploy after the GitHub push. Details: `docs/AUTO_UPDATE.md`.
+GitHub Actions can run this update script twice per day and commit changed JSON data. Vercel can redeploy after the GitHub push. The script attempts public read-only FIFA/ESPN fetches and falls back to existing JSON if sources fail. Details: `docs/AUTO_UPDATE.md`.
 
 ## Data Scope
 

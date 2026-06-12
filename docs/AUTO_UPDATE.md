@@ -14,9 +14,28 @@ The workflow runs at:
 
 ## Data Provider Scope
 
-The current script is an MVP scaffold. It does not call paid APIs, does not need API keys, and does not log in anywhere.
+The current script uses public read-only provider attempts:
+
+- FIFA official scores fixtures
+- ESPN fixtures/results
+
+It does not call paid APIs, does not need API keys, and does not log in anywhere.
 
 If data cannot be verified, it must be marked `low` or `unverified`, and the UI should show it as pending. The script must not promote unverified data to `high`.
+
+Provider failures are non-fatal. If FIFA or ESPN is temporarily unavailable, existing JSON is preserved and the site should continue to build.
+
+## Conservative AI Advice
+
+For matches in the next 24-48 hours, the update script can add a conservative AI advice placeholder if one does not already exist.
+
+Rules:
+
+- Confidence stays low.
+- The reasoning explicitly says odds data is pending.
+- No stake guidance.
+- No automatic wagering.
+- Existing recommendations are not overwritten.
 
 ## Safety
 
@@ -29,4 +48,4 @@ If data cannot be verified, it must be marked `low` or `unverified`, and the UI 
 
 ## Future Provider Swap
 
-Future read-only providers such as API-Football or Sportmonks can replace the internal provider section of `scripts/update-worldcup-data.mjs`. Keep validation and confidence downgrades in place.
+Future read-only providers such as API-Football or Sportmonks can replace `scripts/providers/*.mjs`. Keep validation and confidence downgrades in place.
