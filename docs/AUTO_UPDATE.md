@@ -27,12 +27,13 @@ Provider failures are non-fatal. If FIFA or ESPN is temporarily unavailable, exi
 
 ## Conservative AI Advice
 
-For matches in the next 24-48 hours, the update script can add a conservative AI advice placeholder if one does not already exist.
+For today's remaining matches, all tomorrow matches, and matches in the next 48 hours, the update script can add or normalize a conservative AI advice placeholder if one does not already exist.
 
 Rules:
 
 - Confidence stays low.
 - The reasoning explicitly says odds data is pending.
+- Starting lineup and injury information are marked pending.
 - No stake guidance.
 - No automatic wagering.
 - Existing recommendations are not overwritten.

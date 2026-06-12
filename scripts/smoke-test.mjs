@@ -4,6 +4,10 @@ import "./focused-tests.mjs";
 import "./parser-tests.mjs";
 
 const root = process.cwd();
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
 const sourceRoots = ["src", "docs", "prisma", "README.md"].filter((path) => existsSync(join(root, path)));
 const forbiddenTerms = [
   ["auto", "Bet"],
@@ -167,6 +171,9 @@ for (const id of ["canada-bosnia-herzegovina", "usa-paraguay"]) {
 for (const field of ["--dry-run", "--write", "dataConfidence", "unverified"]) {
   if (!updateScript.includes(field)) throw new Error(`Update script missing ${field}`);
 }
+for (const field of ["generated recommendations count", "score_pending count", "tomorrow matches count", "next 48h matches count"]) {
+  if (!updateScript.includes(field)) throw new Error(`Update script debug log missing ${field}`);
+}
 for (const field of ["fetchFifaScheduleData", "FIFA official scores fixtures"]) {
   if (!fifaProvider.includes(field)) throw new Error(`FIFA provider missing ${field}`);
 }
@@ -176,8 +183,38 @@ for (const field of ["fetchEspnScheduleData", "ESPN fixtures/results"]) {
 for (const field of ["mergeScheduleData", "hasMatchingFifaAndEspn", "kept existing high-confidence data"]) {
   if (!mergeProvider.includes(field)) throw new Error(`Merge provider missing ${field}`);
 }
-for (const field of ["24-48h", "盤口資料待確認", "confidence: 42"]) {
+for (const field of ["today/tomorrow/48h", "盤口資料待確認", "confidence: 48"]) {
   if (!updateScript.includes(field)) throw new Error(`Update script missing conservative advice behavior: ${field}`);
 }
+
+const canadaBosnia = getScheduleRecord("canada-bosnia-herzegovina");
+assert(canadaBosnia.status === "finished" && canadaBosnia.score === "1 - 1", "Canada vs Bosnia should be finished with score");
+assert(canadaBosnia.dataConfidence === "medium", "Single-source finished score should be medium confidence");
+assert(homePage.includes("scoreSingleSource"), "finished + score single-source UI status should exist");
+assert(homePage.includes("getDisplayStatusLabel"), "finished match must use display status helper");
+assert(!homePage.includes('match.status === "finished" ? "尚未開賽"'), "finished match must not display not started");
+
+const taipeiKey = (value) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
+const reference = new Date("2026-06-13T00:00:00+08:00");
+const tomorrowKey = taipeiKey(new Date(reference.getTime() + 24 * 36e5));
+const todayKey = taipeiKey(reference);
+const todayTomorrowUpcoming = worldCupScheduleRecords.filter(
+  (match) => match.status === "upcoming" && [todayKey, tomorrowKey].includes(taipeiKey(match.kickoffTimeUtc))
+);
+assert(todayTomorrowUpcoming.every((match) => recommendationRecords[match.id]), "today/tomorrow upcoming matches must have recommendations");
+for (const id of ["qatar-switzerland", "brazil-morocco", "haiti-scotland", "australia-turkiye"]) {
+  assert(recommendationRecords[id], `6/14 fixture must have conservative analysis: ${id}`);
+  assert(recommendationRecords[id].confidence <= 62, `Conservative confidence must be <= 62: ${id}`);
+  assert(recommendationRecords[id].modelView.includes("盤口資料待確認"), `Conservative advice must mention odds pending: ${id}`);
+}
+
+const futureRows = worldCupScheduleRecords
+  .filter((match) => match.status !== "finished")
+  .sort((a, b) => new Date(a.kickoffTimeUtc) - new Date(b.kickoffTimeUtc));
+for (let index = 1; index < futureRows.length; index += 1) {
+  assert(new Date(futureRows[index - 1].kickoffTimeUtc) <= new Date(futureRows[index].kickoffTimeUtc), "future 7 day schedule should sort near to far");
+}
+assert(homePage.includes("getScheduleDisplayRows"), "homepage should use future/history schedule display ordering");
 
 console.log("Smoke tests passed");

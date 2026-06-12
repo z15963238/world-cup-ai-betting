@@ -1,0 +1,51 @@
+# Schedule And Recommendation Flow
+
+## When GitHub Actions Runs
+
+The workflow runs twice per day:
+
+- 08:00 Taiwan time
+- 12:00 Taiwan time
+
+It can also be started manually with `workflow_dispatch`.
+
+## What It Fetches
+
+The update script attempts public read-only sources:
+
+- FIFA official scores fixtures
+- ESPN fixtures/results and match pages
+
+It does not use paid APIs, API keys, bookmaker login, betting accounts, or wagering APIs.
+
+## Which Matches Get AI Advice
+
+The script ensures conservative AI advice for:
+
+- today's remaining matches
+- all tomorrow matches
+- all upcoming matches in the next 48 hours
+
+Conservative advice must mention:
+
+- odds data pending
+- starting lineup pending
+- injury information pending
+
+It avoids correct-score, player, corner, and card markets.
+
+## Finished Matches
+
+A match shows as finished only when provider data gives a final score. If a single provider supplies the score, the score status is single-source and awaits cross-verification.
+
+## Pending Score Confirmation
+
+If kickoff time plus 2.5 hours has passed but no final score was parsed, the UI shows pending score confirmation instead of not started.
+
+## Conservative Analysis
+
+If a match has incomplete player, injury, or odds data, the generated advice is conservative and confidence stays low.
+
+## Cloud Execution
+
+The user's computer does not need to stay on. GitHub Actions updates data in the cloud, commits changed JSON, and Vercel redeploys after the GitHub push.

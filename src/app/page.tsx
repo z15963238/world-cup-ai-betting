@@ -19,6 +19,10 @@ const text = {
   noAnalysis: "\u5c1a\u672a\u5206\u6790",
   pending: "\u5f85\u78ba\u8a8d",
   pendingScore: "\u5f85\u6bd4\u5206\u78ba\u8a8d",
+  scoreConfirmed: "\u5df2\u78ba\u8a8d",
+  scoreSingleSource: "\u55ae\u4e00\u4f86\u6e90\uff0c\u5f85\u4ea4\u53c9\u9a57\u8b49",
+  scoreNotApplicable: "\u4e0d\u9069\u7528",
+  conservativeAnalysis: "\u4fdd\u5b88\u5206\u6790",
   score: "\u6bd4\u5206\uff1a",
   generate: "\u7522\u751f AI \u5efa\u8b70",
   view: "\u67e5\u770b AI \u5efa\u8b70",
@@ -35,8 +39,10 @@ const text = {
   taiwanTime: "\u53f0\u7063\u6642\u9593",
   match: "\u5c0d\u6230\u7d44\u5408",
   group: "\u5206\u7d44",
-  status: "\u72c0\u614b",
-  analysisStatus: "\u8cfd\u524d\u5206\u6790\u8cc7\u6599\u72c0\u614b"
+  status: "\u6bd4\u8cfd\u72c0\u614b",
+  scoreStatus: "\u6bd4\u5206\u8cc7\u6599",
+  analysisStatus: "\u8cfd\u524d\u5206\u6790",
+  scheduleScope: "\u76ee\u524d\u50c5\u986f\u793a\u5df2\u9a57\u8b49\u6216\u5df2\u5217\u5165\u8cc7\u6599\u7684\u8cfd\u7a0b\u3002"
 };
 
 const featuredMatchIds = ["mexico-south-africa", "south-korea-czechia", "canada-bosnia-herzegovina", "usa-paraguay"] as const;
@@ -155,8 +161,8 @@ function MatchCard({ match, selected, onSelect }: { match: FeaturedMatch; select
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
           {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
-          <Badge tone={match.hasRecommendation ? "success" : "muted"}>{match.hasRecommendation ? text.hasAnalysis : text.noAnalysis}</Badge>
-          {match.dataConfidence !== "high" ? <Badge tone="warning">{text.pending}</Badge> : null}
+          <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
+          <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
           <span className="text-sm text-slate-500">{getAnalysisMessage(match)}</span>
         </div>
       </div>
@@ -214,21 +220,23 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
       <div>
         <h2 className="text-3xl font-black tracking-normal text-slate-950">{text.schedule}</h2>
         <p className="mt-2 text-sm text-slate-600">{text.scheduleHint}</p>
+        <p className="mt-1 text-sm text-slate-500">{text.scheduleScope}</p>
       </div>
       <div className="hidden overflow-hidden rounded-2xl border border-border bg-white shadow-panel lg:block">
-        <div className="grid grid-cols-[1fr_1fr_1.5fr_0.7fr_0.8fr_1fr] gap-3 border-b border-border bg-slate-100 px-5 py-3 text-sm font-bold text-slate-700">
+        <div className="grid grid-cols-[0.9fr_0.9fr_1.4fr_0.65fr_0.9fr_1.2fr_1fr] gap-3 border-b border-border bg-slate-100 px-5 py-3 text-sm font-bold text-slate-700">
           <span>{text.date}</span>
           <span>{text.taiwanTime}</span>
           <span>{text.match}</span>
           <span>{text.group}</span>
           <span>{text.status}</span>
+          <span>{text.scoreStatus}</span>
           <span>{text.analysisStatus}</span>
         </div>
         <div className="divide-y divide-border">
-          {sortedWorldCupSchedule.map((match) => (
+          {getScheduleDisplayRows().map((match) => (
             <button
               key={match.id}
-              className={`grid w-full grid-cols-[1fr_1fr_1.5fr_0.7fr_0.8fr_1fr] gap-3 px-5 py-4 text-left text-sm transition ${
+              className={`grid w-full grid-cols-[0.9fr_0.9fr_1.4fr_0.65fr_0.9fr_1.2fr_1fr] gap-3 px-5 py-4 text-left text-sm transition ${
                 selectedId === match.id ? "bg-emerald-50 text-slate-900" : match.status === "finished" ? "bg-slate-50 text-slate-500" : "text-slate-800"
               } ${match.hasRecommendation ? "hover:bg-emerald-50" : "cursor-default"}`}
               type="button"
@@ -245,16 +253,17 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
                 <Badge tone={getStatusTone(match)}>{getDisplayStatusLabel(match)}</Badge>
               </span>
               <span>
-                <Badge tone={match.dataConfidence !== "high" ? "warning" : match.hasRecommendation ? "success" : "muted"}>
-                  {match.dataConfidence !== "high" ? text.pending : match.hasRecommendation ? text.hasAnalysis : text.noAnalysis}
-                </Badge>
+                <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
+              </span>
+              <span>
+                <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
               </span>
             </button>
           ))}
         </div>
       </div>
       <div className="grid gap-3 lg:hidden">
-        {sortedWorldCupSchedule.map((match) => (
+        {getScheduleDisplayRows().map((match) => (
           <button
             key={match.id}
             className={`rounded-2xl border border-border bg-white p-4 text-left shadow-panel transition ${
@@ -278,8 +287,8 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
-              <Badge tone={match.hasRecommendation ? "success" : "muted"}>{match.hasRecommendation ? text.hasAnalysis : text.noAnalysis}</Badge>
-              {match.dataConfidence !== "high" ? <Badge tone="warning">{text.pending}</Badge> : null}
+              <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
+              <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
             </div>
           </button>
         ))}
@@ -312,6 +321,25 @@ function getAnalysisMessage(match: FeaturedMatch | WorldCupScheduleMatch) {
   return match.hasRecommendation ? text.hasAnalysis : text.canAnalyze;
 }
 
+function getScoreStatusLabel(match: WorldCupScheduleMatch) {
+  if (match.status !== "finished") return text.scoreNotApplicable;
+  if (match.dataConfidence === "high") return text.scoreConfirmed;
+  if (match.dataConfidence === "medium") return text.scoreSingleSource;
+  return text.pending;
+}
+
+function getScoreStatusTone(match: WorldCupScheduleMatch) {
+  if (match.status !== "finished") return "muted";
+  if (match.dataConfidence === "high") return "success";
+  if (match.dataConfidence === "medium") return "warning";
+  return "warning";
+}
+
+function getAnalysisStatusLabel(match: WorldCupScheduleMatch) {
+  if (!match.hasRecommendation) return text.noAnalysis;
+  return match.dataConfidence === "low" || match.dataConfidence === "unverified" ? text.conservativeAnalysis : text.hasAnalysis;
+}
+
 function getDisplayStatusLabel(match: WorldCupScheduleMatch) {
   if (match.status !== "finished" && isPastScoreConfirmationWindow(match)) return text.pendingScore;
   return statusLabels[match.status];
@@ -324,4 +352,16 @@ function getStatusTone(match: WorldCupScheduleMatch) {
 
 function isPastScoreConfirmationWindow(match: WorldCupScheduleMatch) {
   return match.status !== "finished" && Date.now() > new Date(match.kickoffTimeUtc).getTime() + 2.5 * 36e5;
+}
+
+function getScheduleDisplayRows() {
+  const now = Date.now();
+  const sevenDaysLater = now + 7 * 24 * 36e5;
+  const upcoming = sortedWorldCupSchedule
+    .filter((match) => match.status !== "finished" && new Date(match.kickoffTimeUtc).getTime() <= sevenDaysLater)
+    .sort((a, b) => new Date(a.kickoffTimeUtc).getTime() - new Date(b.kickoffTimeUtc).getTime());
+  const finished = sortedWorldCupSchedule
+    .filter((match) => match.status === "finished")
+    .sort((a, b) => new Date(b.kickoffTimeUtc).getTime() - new Date(a.kickoffTimeUtc).getTime());
+  return [...upcoming, ...finished];
 }

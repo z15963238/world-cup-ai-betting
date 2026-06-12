@@ -25,6 +25,10 @@ If a record is not verified, set `dataConfidence` to `pending`. The UI must show
 
 Finished matches must have a final score. The score must be cross-checked before being marked as high confidence.
 
+If a single public source supplies a finished score, mark it as `medium`, show it as single-source, and wait for cross-verification before promoting it to high confidence.
+
+If kickoff time plus 2.5 hours has passed and no provider parsed a score, the UI must show pending score confirmation instead of not started.
+
 For v1.4.3:
 
 - Mexico vs South Africa: `2 - 0`
