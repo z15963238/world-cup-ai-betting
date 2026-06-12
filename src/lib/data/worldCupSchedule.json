@@ -65,11 +65,11 @@
     "status": "upcoming",
     "group": "B 組",
     "venue": "Levi's Stadium",
-    "hasRecommendation": false,
+    "hasRecommendation": true,
     "sourceName": "ESPN schedule and CBS Sports fixture list",
     "sourceUrl": "https://www.cbssports.com/soccer/news/world-cup-2026-schedule-times-dates/",
     "lastVerifiedAt": "2026-06-12",
-    "dataConfidence": "high"
+    "dataConfidence": "low"
   },
   {
     "id": "brazil-morocco",
@@ -79,11 +79,11 @@
     "status": "upcoming",
     "group": "C 組",
     "venue": "東海岸體育場",
-    "hasRecommendation": false,
+    "hasRecommendation": true,
     "sourceName": "ESPN schedule and CBS Sports fixture list",
     "sourceUrl": "https://www.cbssports.com/soccer/news/world-cup-2026-schedule-times-dates/",
     "lastVerifiedAt": "2026-06-12",
-    "dataConfidence": "high"
+    "dataConfidence": "low"
   },
   {
     "id": "haiti-scotland",
@@ -93,11 +93,11 @@
     "status": "upcoming",
     "group": "C 組",
     "venue": "Gillette Stadium",
-    "hasRecommendation": false,
+    "hasRecommendation": true,
     "sourceName": "ESPN schedule and CBS Sports fixture list",
     "sourceUrl": "https://www.cbssports.com/soccer/news/world-cup-2026-schedule-times-dates/",
     "lastVerifiedAt": "2026-06-12",
-    "dataConfidence": "high"
+    "dataConfidence": "low"
   },
   {
     "id": "australia-turkiye",
@@ -107,10 +107,10 @@
     "status": "upcoming",
     "group": "D 組",
     "venue": "場館待確認",
-    "hasRecommendation": false,
+    "hasRecommendation": true,
     "sourceName": "ESPN schedule and CBS Sports fixture list",
     "sourceUrl": "https://www.cbssports.com/soccer/news/world-cup-2026-schedule-times-dates/",
     "lastVerifiedAt": "2026-06-12",
-    "dataConfidence": "high"
+    "dataConfidence": "low"
   }
 ]
