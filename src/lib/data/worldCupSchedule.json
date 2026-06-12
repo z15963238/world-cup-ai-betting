@@ -34,14 +34,17 @@
     "homeTeam": "加拿大",
     "awayTeam": "波赫",
     "kickoffTimeUtc": "2026-06-12T19:00:00.000Z",
-    "status": "upcoming",
+    "status": "finished",
     "group": "B 組",
     "venue": "多倫多 BMO Field",
     "hasRecommendation": true,
-    "sourceName": "ESPN daily schedule, cross-checked with Guardian matchday guide",
-    "sourceUrl": "https://www.espn.com/soccer/schedule/_/league/fifa.world",
+    "sourceName": "ESPN match page",
+    "sourceUrl": "https://www.espn.com/soccer/match/_/gameId/760416/bosnia-herzegovina-canada",
     "lastVerifiedAt": "2026-06-12",
-    "dataConfidence": "high"
+    "dataConfidence": "medium",
+    "score": "1 - 1",
+    "homeScore": 1,
+    "awayScore": 1
   },
   {
     "id": "usa-paraguay",

@@ -18,6 +18,7 @@ const text = {
   hasAnalysis: "\u5df2\u6709\u5206\u6790",
   noAnalysis: "\u5c1a\u672a\u5206\u6790",
   pending: "\u5f85\u78ba\u8a8d",
+  pendingScore: "\u5f85\u6bd4\u5206\u78ba\u8a8d",
   score: "\u6bd4\u5206\uff1a",
   generate: "\u7522\u751f AI \u5efa\u8b70",
   view: "\u67e5\u770b AI \u5efa\u8b70",
@@ -150,7 +151,7 @@ function MatchCard({ match, selected, onSelect }: { match: FeaturedMatch; select
               {match.venue}
             </p>
           </div>
-          <Badge tone={statusTones[match.status]}>{statusLabels[match.status]}</Badge>
+          <Badge tone={getStatusTone(match)}>{getDisplayStatusLabel(match)}</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
           {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
@@ -173,7 +174,7 @@ function AdviceCard({ match, recommendation }: { match: FeaturedMatch; recommend
           </p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">AI {match.status === "finished" ? text.completedReview : text.hasAnalysis}</h2>
         </div>
-        <Badge tone={match.status === "finished" ? "muted" : "success"}>{statusLabels[match.status]}</Badge>
+        <Badge tone={getStatusTone(match)}>{getDisplayStatusLabel(match)}</Badge>
       </div>
 
       <div className="grid gap-5 p-5 lg:grid-cols-[0.95fr_1.25fr]">
@@ -241,7 +242,7 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
               </span>
               <span>{match.group}</span>
               <span>
-                <Badge tone={statusTones[match.status]}>{statusLabels[match.status]}</Badge>
+                <Badge tone={getStatusTone(match)}>{getDisplayStatusLabel(match)}</Badge>
               </span>
               <span>
                 <Badge tone={match.dataConfidence !== "high" ? "warning" : match.hasRecommendation ? "success" : "muted"}>
@@ -273,7 +274,7 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
                   {match.group} / {match.venue}
                 </p>
               </div>
-              <Badge tone={statusTones[match.status]}>{statusLabels[match.status]}</Badge>
+              <Badge tone={getStatusTone(match)}>{getDisplayStatusLabel(match)}</Badge>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
@@ -307,5 +308,20 @@ function getAnalysisMessage(match: FeaturedMatch | WorldCupScheduleMatch) {
   if (match.status === "finished") {
     return match.hasRecommendation ? text.completedReview : text.completedNoAnalysis;
   }
+  if (isPastScoreConfirmationWindow(match)) return text.pendingScore;
   return match.hasRecommendation ? text.hasAnalysis : text.canAnalyze;
+}
+
+function getDisplayStatusLabel(match: WorldCupScheduleMatch) {
+  if (match.status !== "finished" && isPastScoreConfirmationWindow(match)) return text.pendingScore;
+  return statusLabels[match.status];
+}
+
+function getStatusTone(match: WorldCupScheduleMatch) {
+  if (match.status !== "finished" && isPastScoreConfirmationWindow(match)) return "warning";
+  return statusTones[match.status];
+}
+
+function isPastScoreConfirmationWindow(match: WorldCupScheduleMatch) {
+  return match.status !== "finished" && Date.now() > new Date(match.kickoffTimeUtc).getTime() + 2.5 * 36e5;
 }

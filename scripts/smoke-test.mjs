@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import "./focused-tests.mjs";
+import "./parser-tests.mjs";
 
 const root = process.cwd();
 const sourceRoots = ["src", "docs", "prisma", "README.md"].filter((path) => existsSync(join(root, path)));
@@ -142,7 +143,8 @@ if (getScheduleRecord("south-korea-czechia")?.score !== "2 - 1") {
 }
 const staleDrawScoreSpaced = "1 " + "- 1";
 const staleDrawScoreCompact = "1" + "-1";
-if (worldCupScheduleJson.includes(`"score": "${staleDrawScoreSpaced}"`) || worldCupScheduleJson.includes(`"score": "${staleDrawScoreCompact}"`) || homePage.includes(staleDrawScoreSpaced) || homePage.includes(staleDrawScoreCompact)) {
+const southKoreaCzechia = getScheduleRecord("south-korea-czechia");
+if (southKoreaCzechia?.score === staleDrawScoreSpaced || southKoreaCzechia?.score === staleDrawScoreCompact) {
   throw new Error("South Korea vs Czechia must not show stale draw score");
 }
 for (const id of ["mexico-south-africa", "south-korea-czechia"]) {

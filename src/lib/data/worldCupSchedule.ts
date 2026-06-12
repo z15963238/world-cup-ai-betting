@@ -19,6 +19,8 @@ export type WorldCupScheduleMatch = {
   lastVerifiedAt: string;
   dataConfidence: DataConfidence;
   score?: string;
+  homeScore?: number;
+  awayScore?: number;
 };
 
 const scheduleInput = scheduleData as Array<Omit<WorldCupScheduleMatch, "kickoffTimeTaiwan">>;

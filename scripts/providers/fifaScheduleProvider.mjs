@@ -1,27 +1,34 @@
 const FIFA_FIXTURES_URL = "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures";
 
-export async function fetchFifaScheduleData({ fetchImpl = fetch } = {}) {
+export async function fetchFifaScheduleData({ fetchImpl = fetch, debug = false } = {}) {
+  const debugLines = [`[FIFA] fetch URL: ${FIFA_FIXTURES_URL}`];
   try {
     const response = await fetchImpl(FIFA_FIXTURES_URL, {
       headers: {
         "user-agent": "world-cup-ai-decision-support/1.0"
       }
     });
+    debugLines.push(`[FIFA] fetch ${response.ok ? "ok" : "failed"}: ${response.status}`);
 
     if (!response.ok) {
-      return { source: "fifa", sourceUrl: FIFA_FIXTURES_URL, records: [], warnings: [`FIFA fetch failed: ${response.status}`] };
+      return { source: "fifa", sourceUrl: FIFA_FIXTURES_URL, records: [], warnings: [`FIFA fetch failed: ${response.status}`], debugLines: debug ? debugLines : [] };
     }
 
     const html = await response.text();
+    debugLines.push(`[FIFA] fetched raw length: ${html.length}`);
     const records = parseFifaHtml(html);
+    debugLines.push(`[FIFA] parsed matches: ${records.length}`);
+    if (!records.length) debugLines.push("[FIFA] no machine-readable fixture data parsed");
     return {
       source: "fifa",
       sourceUrl: FIFA_FIXTURES_URL,
       records,
-      warnings: records.length ? [] : ["FIFA page fetched but no machine-readable fixtures were parsed"]
+      warnings: records.length ? [] : ["FIFA page fetched but no machine-readable fixtures were parsed"],
+      debugLines: debug ? debugLines : []
     };
   } catch (error) {
-    return { source: "fifa", sourceUrl: FIFA_FIXTURES_URL, records: [], warnings: [`FIFA fetch error: ${error.message}`] };
+    debugLines.push(`[FIFA] fetch error: ${error.message}`);
+    return { source: "fifa", sourceUrl: FIFA_FIXTURES_URL, records: [], warnings: [`FIFA fetch error: ${error.message}`], debugLines: debug ? debugLines : [] };
   }
 }
 

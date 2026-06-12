@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { fetchEspnScheduleData } from "./providers/espnScheduleProvider.mjs";
 import { fetchFifaScheduleData } from "./providers/fifaScheduleProvider.mjs";
 import { mergeScheduleData } from "./providers/mergeScheduleData.mjs";
+import { expectedRecentResults } from "./expectedRecentResults.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -11,6 +12,7 @@ const schedulePath = join(root, "src/lib/data/worldCupSchedule.json");
 const recommendationsPath = join(root, "src/lib/data/recommendations.json");
 
 const mode = process.argv.includes("--write") ? "write" : process.argv.includes("--dry-run") ? "dry-run" : null;
+const debug = process.argv.includes("--debug");
 if (!mode) {
   console.error("Usage: node scripts/update-worldcup-data.mjs --dry-run|--write");
   process.exit(1);
@@ -25,7 +27,10 @@ const originalRecommendations = JSON.stringify(recommendations, null, 2);
 const changes = [];
 const warnings = [];
 
-const providerResults = await Promise.allSettled([fetchFifaScheduleData(), fetchEspnScheduleData()]);
+const providerResults = await Promise.allSettled([
+  fetchFifaScheduleData({ debug }),
+  fetchEspnScheduleData({ expectedRecentResults, debug })
+]);
 const usableProviderResults = providerResults.flatMap((result) => {
   if (result.status === "fulfilled") return [result.value];
   warnings.push(`Provider failed without data changes: ${result.reason?.message || result.reason}`);
@@ -36,6 +41,7 @@ const merged = mergeScheduleData(schedule, usableProviderResults, verifiedAt);
 schedule = merged.schedule;
 changes.push(...merged.changes);
 warnings.push(...merged.warnings);
+if (debug) for (const line of merged.debugLines) console.log(line);
 
 for (const match of schedule) {
   normalizeDataConfidence(match, changes);
@@ -50,6 +56,15 @@ for (const match of schedule) {
   }
 }
 
+for (const expected of expectedRecentResults) {
+  const kickoffPlusWindow = new Date(new Date(expected.kickoffTimeUtc).getTime() + 2.5 * 36e5);
+  const scheduleMatch = schedule.find((match) => match.id === expected.id);
+  if (now > kickoffPlusWindow && (!scheduleMatch || scheduleMatch.status !== "finished" || !scheduleMatch.score)) {
+    warnings.push(`${expected.id}: 已過完賽時間，但外部資料源尚未解析到比分`);
+    if (debug) console.log(`[MERGE] ${expected.id} no verified provider score available`);
+  }
+}
+
 if (warnings.length) {
   console.warn("Warnings:");
   for (const warning of warnings) console.warn(`- ${warning}`);
@@ -58,6 +73,7 @@ if (warnings.length) {
 if (mode === "dry-run") {
   console.log("Dry run completed.");
   console.log(changes.length ? changes.join("\n") : "No changes needed.");
+  console.log(nextWriteSummary(schedule, recommendations, originalSchedule, originalRecommendations));
   process.exit(0);
 }
 
@@ -72,6 +88,12 @@ console.log(changes.length ? changes.join("\n") : "No changes needed.");
 if (!existsSync(schedulePath) || !existsSync(recommendationsPath)) {
   console.error("Expected data files were not found after write.");
   process.exit(1);
+}
+
+function nextWriteSummary(nextSchedule, nextRecommendations, previousSchedule, previousRecommendations) {
+  const scheduleChanged = JSON.stringify(nextSchedule, null, 2) !== previousSchedule;
+  const recommendationsChanged = JSON.stringify(nextRecommendations, null, 2) !== previousRecommendations;
+  return `[WRITE] schedule would update: ${scheduleChanged}; recommendations would update: ${recommendationsChanged}`;
 }
 
 function normalizeDataConfidence(match, log) {
