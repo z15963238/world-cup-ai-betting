@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id                         String           @id @default(cuid())
+  name                       String           @unique
+  fifaRanking                Int
+  manager                    String?
+  formation                  String?
+  tacticalProfile            TacticalProfile?
+  players                    Player[]
+  homeMatches                Match[]          @relation("HomeTeam")
+  awayMatches                Match[]          @relation("AwayTeam")
+  lineups                    Lineup[]
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+}
+
+model Player {
+  id                         String                  @id @default(cuid())
+  name                       String
+  age                        Int
+  teamId                     String
+  club                       String
+  primaryClubPosition        String
+  nationalTeamPosition       String
+  isPositionMismatch         Boolean                 @default(false)
+  recentClubForm             Float
+  recentNationalTeamForm     Float
+  minutesLast10              Int
+  injuryReports              InjuryReport[]
+  positionHistory            PlayerPositionHistory[]
+  lineups                    Lineup[]
+  team                       Team                    @relation(fields: [teamId], references: [id])
+}
+
+model Match {
+  id                         String           @id @default(cuid())
+  date                       DateTime
+  venue                      String
+  stage                      String
+  homeTeamId                 String
+  awayTeamId                 String
+  weather                    String?
+  refereeProfile             String?
+  homeTeam                   Team             @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam                   Team             @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  markets                    Market[]
+  oddsSnapshots              OddsSnapshot[]
+  recommendations            Recommendation[]
+  reviews                    MatchReview[]
+  lineups                    Lineup[]
+}
+
+model OddsProvider {
+  id                         String         @id @default(cuid())
+  name                       String         @unique
+  region                     String
+  isSharp                    Boolean        @default(false)
+  snapshots                  OddsSnapshot[]
+}
+
+model OddsSnapshot {
+  id                         String       @id @default(cuid())
+  matchId                    String
+  providerId                 String
+  marketType                 String
+  timestamp                  DateTime
+  decimalOdds                Float
+  line                       Float?
+  impliedProbability         Float
+  normalizedProbability      Float?
+  volumeIndex                Float?
+  match                      Match        @relation(fields: [matchId], references: [id])
+  provider                   OddsProvider @relation(fields: [providerId], references: [id])
+}
+
+model Market {
+  id                         String          @id @default(cuid())
+  matchId                    String
+  type                       String
+  label                      String
+  match                      Match           @relation(fields: [matchId], references: [id])
+  bettingOptions             BettingOption[]
+}
+
+model BettingOption {
+  id                         String @id @default(cuid())
+  marketId                   String
+  label                      String
+  decimalOdds                Float
+  line                       Float?
+  market                     Market @relation(fields: [marketId], references: [id])
+}
+
+model Recommendation {
+  id                         String   @id @default(cuid())
+  matchId                    String
+  suggestedMarket            String
+  modelProbability           Float
+  marketImpliedProbability   Float
+  normalizedMarketProbability Float
+  edge                       Float
+  confidenceScore            Float
+  riskScore                  Float
+  riskLevel                  String
+  decisionSupport            String
+  stakeGuidance              String
+  reasoningJson              String
+  warningsJson               String
+  match                      Match    @relation(fields: [matchId], references: [id])
+}
+
+model InjuryReport {
+  id                         String   @id @default(cuid())
+  playerId                   String
+  status                     String
+  description                String?
+  reportedAt                 DateTime @default(now())
+  player                     Player   @relation(fields: [playerId], references: [id])
+}
+
+model Lineup {
+  id                         String @id @default(cuid())
+  matchId                    String
+  teamId                     String
+  playerId                   String
+  position                   String
+  isStarter                  Boolean
+  match                      Match  @relation(fields: [matchId], references: [id])
+  team                       Team   @relation(fields: [teamId], references: [id])
+  player                     Player @relation(fields: [playerId], references: [id])
+}
+
+model PlayerPositionHistory {
+  id                         String @id @default(cuid())
+  playerId                   String
+  clubPosition               String
+  nationalTeamPosition       String
+  sampleSize                 Int
+  fitScore                   Float
+  player                     Player @relation(fields: [playerId], references: [id])
+}
+
+model MatchReview {
+  id                         String   @id @default(cuid())
+  matchId                    String
+  prediction                 String
+  actualResult               String
+  closingLineValue           Float
+  modelHit                   Boolean
+  notes                      String
+  createdAt                  DateTime @default(now())
+  match                      Match    @relation(fields: [matchId], references: [id])
+}
+
+model TacticalProfile {
+  id                         String @id @default(cuid())
+  teamId                     String @unique
+  pressingLevel              Float
+  counterAttackAbility       Float
+  possessionAbility          Float
+  setPieceThreat             Float
+  vulnerableToCounter        Float
+  vulnerableToPress          Float
+  team                       Team   @relation(fields: [teamId], references: [id])
+}

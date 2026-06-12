@@ -1,0 +1,157 @@
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import "./focused-tests.mjs";
+
+const root = process.cwd();
+const sourceRoots = ["src", "docs", "prisma", "README.md"].filter((path) => existsSync(join(root, path)));
+const forbiddenTerms = [
+  ["auto", "Bet"],
+  ["place", "Bet"],
+  ["execute", "Bet"],
+  ["bookmaker", "Login"],
+  ["betting", "Bot"],
+  ["martin", "gale"],
+  ["one", "Click", "Bet"],
+  ["order", "Executor"],
+  ["wager", "Executor"]
+].map((parts) => parts.join(""));
+
+function listFiles(path) {
+  const absolute = join(root, path);
+  if (statSync(absolute).isFile()) return [absolute];
+
+  return readdirSync(absolute).flatMap((entry) => {
+    const child = join(path, entry);
+    const childAbsolute = join(root, child);
+    if (statSync(childAbsolute).isDirectory()) return listFiles(child);
+    return [childAbsolute];
+  });
+}
+
+for (const file of sourceRoots.flatMap(listFiles)) {
+  const content = readFileSync(file, "utf8");
+  const match = forbiddenTerms.find((term) => content.includes(term));
+  if (match) {
+    throw new Error(`Forbidden execution-oriented term found in ${file}`);
+  }
+}
+
+const teams = readFileSync(join(root, "src/lib/data/mockTeams.ts"), "utf8");
+const matches = readFileSync(join(root, "src/lib/data/mockMatches.ts"), "utf8");
+const players = readFileSync(join(root, "src/lib/data/mockPlayers.ts"), "utf8");
+const recommendationEngine = readFileSync(join(root, "src/lib/betting/recommendationEngine.ts"), "utf8");
+const oddsMath = readFileSync(join(root, "src/lib/betting/oddsMath.ts"), "utf8");
+const marketEvaluationEngine = readFileSync(join(root, "src/lib/betting/marketEvaluationEngine.ts"), "utf8");
+const manualValidation = readFileSync(join(root, "src/lib/manual-input/validation.ts"), "utf8");
+const manualRanking = readFileSync(join(root, "src/lib/manual-input/ranking.ts"), "utf8");
+const manualStorage = readFileSync(join(root, "src/lib/storage/manualAnalysesStorage.ts"), "utf8");
+const taiwanTimeFormatter = readFileSync(join(root, "src/lib/time/formatTaiwanTime.ts"), "utf8");
+const worldCupSchedule = readFileSync(join(root, "src/lib/data/worldCupSchedule.ts"), "utf8");
+const scheduleValidation = readFileSync(join(root, "src/lib/data/validateWorldCupSchedule.ts"), "utf8");
+const homePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");
+
+for (const id of ["argentina", "france", "brazil"]) {
+  if (!teams.includes(`id: "${id}"`)) throw new Error(`Missing mock team id: ${id}`);
+}
+
+for (const id of ["argentina-france", "brazil-france"]) {
+  if (!matches.includes(`id: "${id}"`)) throw new Error(`Missing mock match id: ${id}`);
+}
+
+for (const nationalTeam of ["Argentina", "France", "Brazil"]) {
+  if (!players.includes(`nationalTeam: "${nationalTeam}"`)) throw new Error(`Missing mock players for ${nationalTeam}`);
+}
+
+for (const field of ["suggestedMarket", "decisionSupport", "stakeGuidance", "confidenceScore", "riskLevel"]) {
+  if (!recommendationEngine.includes(field)) throw new Error(`Recommendation engine missing ${field}`);
+}
+
+for (const field of ["normalizeOneX2Market", "normalizeTwoWayMarket", "calculateOverround", "validateDecimalOdds", "formatProbability", "formatOddsEdge"]) {
+  if (!oddsMath.includes(field)) throw new Error(`Odds math missing ${field}`);
+}
+
+for (const field of ["Home", "Draw", "Away", "Asian Handicap", "Total Goals", "BTTS", "Corner Total", "odds movement", "fatigue"]) {
+  if (!marketEvaluationEngine.includes(field)) throw new Error(`Market evaluation engine missing factor or market: ${field}`);
+}
+
+function impliedProbability(decimalOdds) {
+  return decimalOdds > 1 ? 1 / decimalOdds : 0;
+}
+
+function normalize(probabilities) {
+  const total = probabilities.reduce((sum, value) => sum + value, 0);
+  return probabilities.map((value) => value / total);
+}
+
+const oneX2 = normalize([2.2, 3.3, 3.4].map(impliedProbability));
+const twoWay = normalize([1.91, 1.97].map(impliedProbability));
+const oneX2Total = oneX2.reduce((sum, value) => sum + value, 0);
+const twoWayTotal = twoWay.reduce((sum, value) => sum + value, 0);
+if (Math.abs(oneX2Total - 1) > 0.000001) throw new Error("1X2 normalized probability total is not 1");
+if (Math.abs(twoWayTotal - 1) > 0.000001) throw new Error("Two-way normalized probability total is not 1");
+if (impliedProbability(1) !== 0 || impliedProbability(0.99) !== 0) throw new Error("Invalid odds should return zero implied probability in smoke formula");
+
+const overround = [2.2, 3.3, 3.4].reduce((sum, odds) => sum + impliedProbability(odds), 0) - 1;
+if (Math.abs(overround - 0.0516934046) > 0.0001) throw new Error("Overround calculation changed unexpectedly");
+
+for (const field of ["validateManualInput", "isManualSubmitDisabled", "toSafeNumber"]) {
+  if (!manualValidation.includes(field)) throw new Error(`Manual validation missing ${field}`);
+}
+
+for (const field of ["sortMarketEvaluations", "splitMarketEvaluations", "getEdgeLabel"]) {
+  if (!manualRanking.includes(field)) throw new Error(`Manual ranking missing ${field}`);
+}
+
+for (const field of ["saveManualAnalysisReview", "clearManualAnalysisReview"]) {
+  if (!manualStorage.includes(field)) throw new Error(`Manual analysis storage missing ${field}`);
+}
+
+for (const field of ["formatTaiwanTime", "Asia/Taipei", "\\u53f0\\u7063\\u6642\\u9593"]) {
+  if (!taiwanTimeFormatter.includes(field)) throw new Error(`Taiwan time formatter missing ${field}`);
+}
+
+for (const field of ["worldCupSchedule", "kickoffTimeUtc", "kickoffTimeTaiwan", "hasRecommendation", "finished"]) {
+  if (!worldCupSchedule.includes(field)) throw new Error(`World Cup schedule missing ${field}`);
+}
+
+for (const field of ["sourceName", "sourceUrl", "lastVerifiedAt", "dataConfidence"]) {
+  if (!worldCupSchedule.includes(field)) throw new Error(`World Cup schedule missing source metadata: ${field}`);
+}
+
+for (const field of ["validateWorldCupSchedule", "Duplicate schedule id", "Finished match missing score", "Unfinished match should not have final score", "Missing recommendation"]) {
+  if (!scheduleValidation.includes(field)) throw new Error(`Schedule validation missing ${field}`);
+}
+for (const field of ["Blocked unverified matchup", "High confidence match missing source metadata"]) {
+  if (!scheduleValidation.includes(field)) throw new Error(`Schedule validation missing ${field}`);
+}
+
+if (!worldCupSchedule.includes('id: "mexico-south-africa"') || !worldCupSchedule.includes('score: "2 - 0"')) {
+  throw new Error("Mexico vs South Africa score must be 2 - 0");
+}
+if (!worldCupSchedule.includes('id: "south-korea-czechia"') || !worldCupSchedule.includes('score: "2 - 1"')) {
+  throw new Error("South Korea vs Czechia score must be 2 - 1");
+}
+const staleDrawScoreSpaced = "1 " + "- 1";
+const staleDrawScoreCompact = "1" + "-1";
+if (worldCupSchedule.includes(`score: "${staleDrawScoreSpaced}"`) || worldCupSchedule.includes(`score: "${staleDrawScoreCompact}"`) || homePage.includes(staleDrawScoreSpaced) || homePage.includes(staleDrawScoreCompact)) {
+  throw new Error("South Korea vs Czechia must not show stale draw score");
+}
+for (const id of ["mexico-south-africa", "south-korea-czechia"]) {
+  const matchBlock = worldCupSchedule.slice(worldCupSchedule.indexOf(`id: "${id}"`), worldCupSchedule.indexOf("}", worldCupSchedule.indexOf(`id: "${id}"`)));
+  if (!matchBlock.includes('status: "finished"') || !matchBlock.includes("score:")) throw new Error(`Finished match must have score: ${id}`);
+}
+if (/status: "upcoming"[^}]*score:/s.test(worldCupSchedule)) throw new Error("Future match must not have final score");
+
+for (const id of ["canada-bosnia-herzegovina", "usa-paraguay", "qatar-switzerland", "brazil-morocco", "haiti-scotland", "australia-turkiye"]) {
+  if (!worldCupSchedule.includes(`id: "${id}"`)) throw new Error(`Missing corrected World Cup fixture: ${id}`);
+}
+for (const id of ["canada-japan", "usa-ghana"]) {
+  if (worldCupSchedule.includes(`id: "${id}"`) || homePage.includes(`"${id}"`)) throw new Error(`Incorrect fixture must not remain: ${id}`);
+}
+for (const id of ["canada-bosnia-herzegovina", "usa-paraguay"]) {
+  const matchBlock = worldCupSchedule.slice(worldCupSchedule.indexOf(`id: "${id}"`), worldCupSchedule.indexOf("}", worldCupSchedule.indexOf(`id: "${id}"`)));
+  if (!matchBlock.includes("hasRecommendation: true")) throw new Error(`Tomorrow fixture must have AI recommendation flag: ${id}`);
+  if (!homePage.includes(`"${id}"`)) throw new Error(`Tomorrow fixture recommendation missing from homepage: ${id}`);
+}
+
+console.log("Smoke tests passed");
