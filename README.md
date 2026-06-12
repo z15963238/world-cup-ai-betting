@@ -59,6 +59,22 @@ One-command verification:
 powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1
 ```
 
+## Data Update
+
+Dry run:
+
+```bash
+node scripts/update-worldcup-data.mjs --dry-run
+```
+
+Write JSON data updates:
+
+```bash
+node scripts/update-worldcup-data.mjs --write
+```
+
+GitHub Actions can run this update script twice per day and commit changed JSON data. Vercel can redeploy after the GitHub push. Details: `docs/AUTO_UPDATE.md`.
+
 ## Data Scope
 
 The MVP uses maintained frontend schedule/advice data with source metadata and validation. Future work should connect official read-only data APIs while preserving validation.
@@ -72,6 +88,7 @@ Deployment guide: `docs/DEPLOYMENT.md`.
 Current public demo scope:
 
 - Static frontend schedule and AI advice data.
+- Schedule and recommendation data stored in JSON for automated maintenance.
 - No player API.
 - No odds API.
 - No betting platform connection.

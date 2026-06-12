@@ -35,6 +35,7 @@
 - v1.4.3 corrected the verified Group A scores, added schedule source metadata, added schedule validation, and documented data accuracy rules.
 - v1.4.5 improved dev server stability by clearing stale `.next`, added a safe `scripts/stop-dev.ps1`, corrected upcoming fixtures, and added conservative AI advice for Canada vs Bosnia and Herzegovina and USA vs Paraguay.
 - v1.5 prepared the project for public Vercel demo deployment: static frontend data only, no APIs, no secrets, no login, no betting platform integration.
+- v1.6 added an automated data update scaffold: JSON schedule/recommendation files, dry-run/write update script, GitHub Actions schedule, and auto-update documentation.
 
 ## Bug Fix Pass
 
@@ -63,6 +64,7 @@
 - `scripts/smoke-test.mjs`: Validates schedule source metadata, score corrections for Mexico vs South Africa and South Korea vs Czechia, prevents the stale draw score, and checks finished/upcoming score rules.
 - `scripts/smoke-test.mjs`: Prevents the incorrect Canada vs Japan and USA vs Ghana fixtures from returning, and verifies Canada vs Bosnia and Herzegovina plus USA vs Paraguay have homepage AI recommendations.
 - `npm run build`: Confirms the app can build with the standard Next.js build path used by Vercel.
+- `node scripts/update-worldcup-data.mjs --dry-run`: Checks the update path without writing files or contacting paid APIs.
 - `npm audit`: Reports 5 dependency-chain vulnerabilities, 1 moderate and 4 high. No automatic `audit fix --force` was applied because it may introduce breaking dependency upgrades outside this bug-fix pass.
 - `npm run dev`: Not run during this pass because the request asked for lint, typecheck, and build.
 
@@ -93,3 +95,4 @@
 - World Cup schedule data is still manually maintained and has not been connected to the FIFA official API.
 - Future fixtures marked `pending` must be re-verified before being treated as confirmed.
 - Public demo deployment still depends on manually maintained frontend data until official read-only APIs are integrated.
+- Auto-update currently uses a provider scaffold and JSON validation; it does not yet fetch live official data.

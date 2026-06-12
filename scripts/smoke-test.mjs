@@ -46,7 +46,12 @@ const manualValidation = readFileSync(join(root, "src/lib/manual-input/validatio
 const manualRanking = readFileSync(join(root, "src/lib/manual-input/ranking.ts"), "utf8");
 const manualStorage = readFileSync(join(root, "src/lib/storage/manualAnalysesStorage.ts"), "utf8");
 const taiwanTimeFormatter = readFileSync(join(root, "src/lib/time/formatTaiwanTime.ts"), "utf8");
-const worldCupSchedule = readFileSync(join(root, "src/lib/data/worldCupSchedule.ts"), "utf8");
+const worldCupScheduleSource = readFileSync(join(root, "src/lib/data/worldCupSchedule.ts"), "utf8");
+const worldCupScheduleJson = readFileSync(join(root, "src/lib/data/worldCupSchedule.json"), "utf8");
+const recommendationsJson = readFileSync(join(root, "src/lib/data/recommendations.json"), "utf8");
+const updateScript = readFileSync(join(root, "scripts/update-worldcup-data.mjs"), "utf8");
+const worldCupScheduleRecords = JSON.parse(worldCupScheduleJson);
+const recommendationRecords = JSON.parse(recommendationsJson);
 const scheduleValidation = readFileSync(join(root, "src/lib/data/validateWorldCupSchedule.ts"), "utf8");
 const homePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");
 
@@ -111,11 +116,11 @@ for (const field of ["formatTaiwanTime", "Asia/Taipei", "\\u53f0\\u7063\\u6642\\
 }
 
 for (const field of ["worldCupSchedule", "kickoffTimeUtc", "kickoffTimeTaiwan", "hasRecommendation", "finished"]) {
-  if (!worldCupSchedule.includes(field)) throw new Error(`World Cup schedule missing ${field}`);
+  if (!worldCupScheduleSource.includes(field) && !worldCupScheduleJson.includes(field)) throw new Error(`World Cup schedule missing ${field}`);
 }
 
 for (const field of ["sourceName", "sourceUrl", "lastVerifiedAt", "dataConfidence"]) {
-  if (!worldCupSchedule.includes(field)) throw new Error(`World Cup schedule missing source metadata: ${field}`);
+  if (!worldCupScheduleJson.includes(field)) throw new Error(`World Cup schedule missing source metadata: ${field}`);
 }
 
 for (const field of ["validateWorldCupSchedule", "Duplicate schedule id", "Finished match missing score", "Unfinished match should not have final score", "Missing recommendation"]) {
@@ -125,33 +130,37 @@ for (const field of ["Blocked unverified matchup", "High confidence match missin
   if (!scheduleValidation.includes(field)) throw new Error(`Schedule validation missing ${field}`);
 }
 
-if (!worldCupSchedule.includes('id: "mexico-south-africa"') || !worldCupSchedule.includes('score: "2 - 0"')) {
+const getScheduleRecord = (id) => worldCupScheduleRecords.find((match) => match.id === id);
+if (getScheduleRecord("mexico-south-africa")?.score !== "2 - 0") {
   throw new Error("Mexico vs South Africa score must be 2 - 0");
 }
-if (!worldCupSchedule.includes('id: "south-korea-czechia"') || !worldCupSchedule.includes('score: "2 - 1"')) {
+if (getScheduleRecord("south-korea-czechia")?.score !== "2 - 1") {
   throw new Error("South Korea vs Czechia score must be 2 - 1");
 }
 const staleDrawScoreSpaced = "1 " + "- 1";
 const staleDrawScoreCompact = "1" + "-1";
-if (worldCupSchedule.includes(`score: "${staleDrawScoreSpaced}"`) || worldCupSchedule.includes(`score: "${staleDrawScoreCompact}"`) || homePage.includes(staleDrawScoreSpaced) || homePage.includes(staleDrawScoreCompact)) {
+if (worldCupScheduleJson.includes(`"score": "${staleDrawScoreSpaced}"`) || worldCupScheduleJson.includes(`"score": "${staleDrawScoreCompact}"`) || homePage.includes(staleDrawScoreSpaced) || homePage.includes(staleDrawScoreCompact)) {
   throw new Error("South Korea vs Czechia must not show stale draw score");
 }
 for (const id of ["mexico-south-africa", "south-korea-czechia"]) {
-  const matchBlock = worldCupSchedule.slice(worldCupSchedule.indexOf(`id: "${id}"`), worldCupSchedule.indexOf("}", worldCupSchedule.indexOf(`id: "${id}"`)));
-  if (!matchBlock.includes('status: "finished"') || !matchBlock.includes("score:")) throw new Error(`Finished match must have score: ${id}`);
+  const record = getScheduleRecord(id);
+  if (record?.status !== "finished" || !record.score) throw new Error(`Finished match must have score: ${id}`);
 }
-if (/status: "upcoming"[^}]*score:/s.test(worldCupSchedule)) throw new Error("Future match must not have final score");
+if (worldCupScheduleRecords.some((match) => match.status === "upcoming" && match.score)) throw new Error("Future match must not have final score");
 
 for (const id of ["canada-bosnia-herzegovina", "usa-paraguay", "qatar-switzerland", "brazil-morocco", "haiti-scotland", "australia-turkiye"]) {
-  if (!worldCupSchedule.includes(`id: "${id}"`)) throw new Error(`Missing corrected World Cup fixture: ${id}`);
+  if (!getScheduleRecord(id)) throw new Error(`Missing corrected World Cup fixture: ${id}`);
 }
 for (const id of ["canada-japan", "usa-ghana"]) {
-  if (worldCupSchedule.includes(`id: "${id}"`) || homePage.includes(`"${id}"`)) throw new Error(`Incorrect fixture must not remain: ${id}`);
+  if (getScheduleRecord(id) || homePage.includes(`"${id}"`)) throw new Error(`Incorrect fixture must not remain: ${id}`);
 }
 for (const id of ["canada-bosnia-herzegovina", "usa-paraguay"]) {
-  const matchBlock = worldCupSchedule.slice(worldCupSchedule.indexOf(`id: "${id}"`), worldCupSchedule.indexOf("}", worldCupSchedule.indexOf(`id: "${id}"`)));
-  if (!matchBlock.includes("hasRecommendation: true")) throw new Error(`Tomorrow fixture must have AI recommendation flag: ${id}`);
-  if (!homePage.includes(`"${id}"`)) throw new Error(`Tomorrow fixture recommendation missing from homepage: ${id}`);
+  if (getScheduleRecord(id)?.hasRecommendation !== true) throw new Error(`Tomorrow fixture must have AI recommendation flag: ${id}`);
+  if (!recommendationRecords[id]) throw new Error(`Tomorrow fixture recommendation missing from JSON: ${id}`);
+}
+
+for (const field of ["--dry-run", "--write", "dataConfidence", "unverified"]) {
+  if (!updateScript.includes(field)) throw new Error(`Update script missing ${field}`);
 }
 
 console.log("Smoke tests passed");

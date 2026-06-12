@@ -1,0 +1,49 @@
+name: Update World Cup Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+    - cron: "0 4 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-worldcup-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm install
+
+      - name: Update data
+        run: node scripts/update-worldcup-data.mjs --write
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit changes
+        run: |
+          if [ -n "$(git status --porcelain src/lib/data/worldCupSchedule.json src/lib/data/recommendations.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/lib/data/worldCupSchedule.json src/lib/data/recommendations.json
+            git commit -m "chore: update world cup data"
+            git push
+          else
+            echo "No data changes to commit."
+          fi
