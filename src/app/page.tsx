@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Clock, ListChecks, MapPin, Sparkles } from
 import { Badge } from "@/components/ui/badge";
 import { recommendations, type RecommendationAdvice } from "@/lib/data/recommendations";
 import { sortedWorldCupSchedule, worldCupSchedule, type MatchStatus, type WorldCupScheduleMatch } from "@/lib/data/worldCupSchedule";
+import { getAnalysisStatus, isCompleteRecommendation } from "@/lib/recommendations/getAnalysisStatus";
 
 const text = {
   title: "\u4e16\u754c\u76c3 AI \u8cfd\u524d\u5efa\u8b70",
@@ -63,6 +64,10 @@ const statusTones: Record<MatchStatus, "success" | "warning" | "muted"> = {
 };
 
 export default function HomePage() {
+  const matchesWithRecommendations = useMemo<FeaturedMatch[]>(
+    () => worldCupSchedule.map((match) => ({ ...match, recommendation: recommendations[match.id as keyof typeof recommendations] })),
+    []
+  );
   const featuredMatches = useMemo<FeaturedMatch[]>(
     () =>
       featuredMatchIds
@@ -73,8 +78,8 @@ export default function HomePage() {
   );
   const [selectedId, setSelectedId] = useState(featuredMatches[0]?.id ?? "mexico-south-africa");
   const [showAdvice, setShowAdvice] = useState(false);
-  const selectedMatch = featuredMatches.find((match) => match.id === selectedId) ?? featuredMatches[0];
-  const canShowAdvice = Boolean(selectedMatch?.recommendation);
+  const selectedMatch = matchesWithRecommendations.find((match) => match.id === selectedId) ?? featuredMatches[0];
+  const canShowAdvice = isCompleteRecommendation(selectedMatch?.recommendation);
 
   return (
     <div className="space-y-8">
@@ -126,7 +131,7 @@ export default function HomePage() {
         selectedId={selectedId}
         onSelect={(id) => {
           setSelectedId(id);
-          setShowAdvice(Boolean(recommendations[id as keyof typeof recommendations]));
+          setShowAdvice(isCompleteRecommendation(getRecommendation(id)));
         }}
       />
     </div>
@@ -162,7 +167,7 @@ function MatchCard({ match, selected, onSelect }: { match: FeaturedMatch; select
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
           {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
           <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
-          <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
+          <Badge tone={getAnalysisStatusTone(match.id)}>{getAnalysisStatusLabel(match.id)}</Badge>
           <span className="text-sm text-slate-500">{getAnalysisMessage(match)}</span>
         </div>
       </div>
@@ -186,7 +191,7 @@ function AdviceCard({ match, recommendation }: { match: FeaturedMatch; recommend
       <div className="grid gap-5 p-5 lg:grid-cols-[0.95fr_1.25fr]">
         <div className="rounded-2xl border border-border bg-slate-50 p-5">
           <p className="text-sm font-semibold text-slate-500">{text.pick}</p>
-          <p className="mt-2 text-4xl font-black text-slate-950">{recommendation.pick}</p>
+          <p className="mt-2 text-4xl font-black text-slate-950">{recommendation.recommendedMarket ?? recommendation.pick}</p>
           <div className="mt-6 grid grid-cols-2 gap-4">
             <Metric label={text.confidence} value={`${recommendation.confidence} / 100`} />
             <Metric label={text.risk} value={recommendation.risk} />
@@ -197,8 +202,8 @@ function AdviceCard({ match, recommendation }: { match: FeaturedMatch; recommend
 
         <div className="grid gap-4">
           <InfoBlock icon={<CheckCircle2 className="h-4 w-4 text-emerald-700" />} title={text.why} items={recommendation.reasons} />
-          <InfoBlock icon={<AlertTriangle className="h-4 w-4 text-amber-700" />} title={text.avoid} items={recommendation.avoid} />
-          <InfoBlock icon={<ListChecks className="h-4 w-4 text-slate-700" />} title={text.checklist} items={recommendation.checklist} />
+          <InfoBlock icon={<AlertTriangle className="h-4 w-4 text-amber-700" />} title={text.avoid} items={recommendation.avoidMarkets ?? recommendation.avoid} />
+          <InfoBlock icon={<ListChecks className="h-4 w-4 text-slate-700" />} title={text.checklist} items={recommendation.preMatchChecklist ?? recommendation.checklist} />
         </div>
       </div>
     </section>
@@ -238,9 +243,9 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
               key={match.id}
               className={`grid w-full grid-cols-[0.9fr_0.9fr_1.4fr_0.65fr_0.9fr_1.2fr_1fr] gap-3 px-5 py-4 text-left text-sm transition ${
                 selectedId === match.id ? "bg-emerald-50 text-slate-900" : match.status === "finished" ? "bg-slate-50 text-slate-500" : "text-slate-800"
-              } ${match.hasRecommendation ? "hover:bg-emerald-50" : "cursor-default"}`}
+              } ${isCompleteRecommendation(getRecommendation(match.id)) ? "hover:bg-emerald-50" : "cursor-default opacity-75"}`}
               type="button"
-              disabled={!match.hasRecommendation}
+              disabled={!isCompleteRecommendation(getRecommendation(match.id))}
               onClick={() => onSelect(match.id)}
             >
               <span>{match.kickoffTimeTaiwan.slice(0, 10)}</span>
@@ -256,7 +261,7 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
                 <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
               </span>
               <span>
-                <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
+                <Badge tone={getAnalysisStatusTone(match.id)}>{getAnalysisStatusLabel(match.id)}</Badge>
               </span>
             </button>
           ))}
@@ -268,9 +273,9 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
             key={match.id}
             className={`rounded-2xl border border-border bg-white p-4 text-left shadow-panel transition ${
               selectedId === match.id ? "border-primary ring-4 ring-primary/15" : ""
-            } ${match.status === "finished" ? "opacity-75" : ""} ${match.hasRecommendation ? "hover:border-primary" : "cursor-default"}`}
+            } ${match.status === "finished" ? "opacity-75" : ""} ${isCompleteRecommendation(getRecommendation(match.id)) ? "hover:border-primary" : "cursor-default opacity-75"}`}
             type="button"
-            disabled={!match.hasRecommendation}
+            disabled={!isCompleteRecommendation(getRecommendation(match.id))}
             onClick={() => onSelect(match.id)}
           >
             <div className="flex items-start justify-between gap-3">
@@ -288,7 +293,7 @@ function ScheduleSection({ selectedId, onSelect }: { selectedId: string; onSelec
             <div className="mt-3 flex flex-wrap gap-2">
               {match.status === "finished" && match.score ? <Badge tone="default">{text.score + match.score}</Badge> : null}
               <Badge tone={getScoreStatusTone(match)}>{getScoreStatusLabel(match)}</Badge>
-              <Badge tone={match.hasRecommendation ? "success" : "muted"}>{getAnalysisStatusLabel(match)}</Badge>
+              <Badge tone={getAnalysisStatusTone(match.id)}>{getAnalysisStatusLabel(match.id)}</Badge>
             </div>
           </button>
         ))}
@@ -315,10 +320,10 @@ function InfoBlock({ icon, title, items }: { icon: ReactNode; title: string; ite
 
 function getAnalysisMessage(match: FeaturedMatch | WorldCupScheduleMatch) {
   if (match.status === "finished") {
-    return match.hasRecommendation ? text.completedReview : text.completedNoAnalysis;
+    return isCompleteRecommendation(getRecommendation(match.id)) ? text.completedReview : text.completedNoAnalysis;
   }
   if (isPastScoreConfirmationWindow(match)) return text.pendingScore;
-  return match.hasRecommendation ? text.hasAnalysis : text.canAnalyze;
+  return isCompleteRecommendation(getRecommendation(match.id)) ? text.hasAnalysis : text.canAnalyze;
 }
 
 function getScoreStatusLabel(match: WorldCupScheduleMatch) {
@@ -335,9 +340,19 @@ function getScoreStatusTone(match: WorldCupScheduleMatch) {
   return "warning";
 }
 
-function getAnalysisStatusLabel(match: WorldCupScheduleMatch) {
-  if (!match.hasRecommendation) return text.noAnalysis;
-  return match.dataConfidence === "low" || match.dataConfidence === "unverified" ? text.conservativeAnalysis : text.hasAnalysis;
+function getAnalysisStatusLabel(matchId: string) {
+  const status = getAnalysisStatus(getRecommendation(matchId));
+  if (status === "conservative") return text.conservativeAnalysis;
+  if (status === "available") return text.hasAnalysis;
+  return text.noAnalysis;
+}
+
+function getAnalysisStatusTone(matchId: string) {
+  return getAnalysisStatus(getRecommendation(matchId)) === "missing" ? "muted" : "success";
+}
+
+function getRecommendation(matchId: string) {
+  return recommendations[matchId as keyof typeof recommendations];
 }
 
 function getDisplayStatusLabel(match: WorldCupScheduleMatch) {

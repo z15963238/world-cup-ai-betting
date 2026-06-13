@@ -36,7 +36,10 @@ Rules:
 - Starting lineup and injury information are marked pending.
 - No stake guidance.
 - No automatic wagering.
-- Existing recommendations are not overwritten.
+- Existing complete recommendations are not overwritten.
+- A conservative-analysis label is valid only when `recommendations.json` contains a complete recommendation record.
+- The script must write the recommendation itself, not only `hasRecommendation` in the schedule JSON.
+- Complete conservative recommendations include `recommendedMarket`, `recommendationDecision`, `reasons`, `avoidMarkets`, `preMatchChecklist`, `warnings`, `analysisBasis`, `generatedBy`, and `generatedAt`.
 
 ## Safety
 

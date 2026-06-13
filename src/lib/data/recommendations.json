@@ -64,7 +64,10 @@
     ]
   },
   "usa-paraguay": {
-    "pick": "小 3.5 球，或暫不建議重點下注",
+    "matchId": "usa-paraguay",
+    "recommendedMarket": "暫不建議下注，等待臨場盤口",
+    "recommendationDecision": "wait_for_market",
+    "pick": "暫不建議下注，等待臨場盤口",
     "confidence": 48,
     "risk": "中高",
     "modelView": "美國 vs 巴拉圭 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。",
@@ -85,10 +88,37 @@
       "確認先發陣容。",
       "確認傷病資訊。",
       "確認臨場盤口是否劇烈變動。"
-    ]
+    ],
+    "avoidMarkets": [
+      "正確比分",
+      "球員市場",
+      "角球或紅黃牌市場",
+      "高賠冷門與過度追熱門"
+    ],
+    "preMatchChecklist": [
+      "確認官方開賽時間。",
+      "確認先發陣容。",
+      "確認傷病資訊。",
+      "確認臨場盤口是否劇烈變動。"
+    ],
+    "warnings": [
+      "盤口資料待確認",
+      "先發陣容待確認",
+      "傷病資訊待確認"
+    ],
+    "analysisBasis": [
+      "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+      "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+      "只提供分析參考，不執行下注。"
+    ],
+    "generatedBy": "auto-conservative-generator",
+    "generatedAt": "2026-06-13T00:02:00.141Z"
   },
   "qatar-switzerland": {
-    "pick": "小 3.5 球，或暫不建議重點下注",
+    "matchId": "qatar-switzerland",
+    "recommendedMarket": "暫不建議下注，等待臨場盤口",
+    "recommendationDecision": "wait_for_market",
+    "pick": "暫不建議下注，等待臨場盤口",
     "confidence": 48,
     "risk": "中高",
     "modelView": "卡達 vs 瑞士 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。",
@@ -109,10 +139,37 @@
       "確認先發陣容。",
       "確認傷病資訊。",
       "確認臨場盤口是否劇烈變動。"
-    ]
+    ],
+    "avoidMarkets": [
+      "正確比分",
+      "球員市場",
+      "角球或紅黃牌市場",
+      "高賠冷門與過度追熱門"
+    ],
+    "preMatchChecklist": [
+      "確認官方開賽時間。",
+      "確認先發陣容。",
+      "確認傷病資訊。",
+      "確認臨場盤口是否劇烈變動。"
+    ],
+    "warnings": [
+      "盤口資料待確認",
+      "先發陣容待確認",
+      "傷病資訊待確認"
+    ],
+    "analysisBasis": [
+      "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+      "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+      "只提供分析參考，不執行下注。"
+    ],
+    "generatedBy": "auto-conservative-generator",
+    "generatedAt": "2026-06-13T00:02:00.142Z"
   },
   "brazil-morocco": {
-    "pick": "小 3.5 球，或暫不建議重點下注",
+    "matchId": "brazil-morocco",
+    "recommendedMarket": "暫不建議下注，等待臨場盤口",
+    "recommendationDecision": "wait_for_market",
+    "pick": "暫不建議下注，等待臨場盤口",
     "confidence": 48,
     "risk": "中高",
     "modelView": "巴西 vs 摩洛哥 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。",
@@ -133,10 +190,37 @@
       "確認先發陣容。",
       "確認傷病資訊。",
       "確認臨場盤口是否劇烈變動。"
-    ]
+    ],
+    "avoidMarkets": [
+      "正確比分",
+      "球員市場",
+      "角球或紅黃牌市場",
+      "高賠冷門與過度追熱門"
+    ],
+    "preMatchChecklist": [
+      "確認官方開賽時間。",
+      "確認先發陣容。",
+      "確認傷病資訊。",
+      "確認臨場盤口是否劇烈變動。"
+    ],
+    "warnings": [
+      "盤口資料待確認",
+      "先發陣容待確認",
+      "傷病資訊待確認"
+    ],
+    "analysisBasis": [
+      "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+      "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+      "只提供分析參考，不執行下注。"
+    ],
+    "generatedBy": "auto-conservative-generator",
+    "generatedAt": "2026-06-13T00:02:00.142Z"
   },
   "haiti-scotland": {
-    "pick": "小 3.5 球，或暫不建議重點下注",
+    "matchId": "haiti-scotland",
+    "recommendedMarket": "暫不建議下注，等待臨場盤口",
+    "recommendationDecision": "wait_for_market",
+    "pick": "暫不建議下注，等待臨場盤口",
     "confidence": 48,
     "risk": "中高",
     "modelView": "海地 vs 蘇格蘭 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。",
@@ -157,10 +241,37 @@
       "確認先發陣容。",
       "確認傷病資訊。",
       "確認臨場盤口是否劇烈變動。"
-    ]
+    ],
+    "avoidMarkets": [
+      "正確比分",
+      "球員市場",
+      "角球或紅黃牌市場",
+      "高賠冷門與過度追熱門"
+    ],
+    "preMatchChecklist": [
+      "確認官方開賽時間。",
+      "確認先發陣容。",
+      "確認傷病資訊。",
+      "確認臨場盤口是否劇烈變動。"
+    ],
+    "warnings": [
+      "盤口資料待確認",
+      "先發陣容待確認",
+      "傷病資訊待確認"
+    ],
+    "analysisBasis": [
+      "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+      "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+      "只提供分析參考，不執行下注。"
+    ],
+    "generatedBy": "auto-conservative-generator",
+    "generatedAt": "2026-06-13T00:02:00.143Z"
   },
   "australia-turkiye": {
-    "pick": "小 3.5 球，或暫不建議重點下注",
+    "matchId": "australia-turkiye",
+    "recommendedMarket": "暫不建議下注，等待臨場盤口",
+    "recommendationDecision": "wait_for_market",
+    "pick": "暫不建議下注，等待臨場盤口",
     "confidence": 48,
     "risk": "中高",
     "modelView": "澳洲 vs 土耳其 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。",
@@ -181,6 +292,30 @@
       "確認先發陣容。",
       "確認傷病資訊。",
       "確認臨場盤口是否劇烈變動。"
-    ]
+    ],
+    "avoidMarkets": [
+      "正確比分",
+      "球員市場",
+      "角球或紅黃牌市場",
+      "高賠冷門與過度追熱門"
+    ],
+    "preMatchChecklist": [
+      "確認官方開賽時間。",
+      "確認先發陣容。",
+      "確認傷病資訊。",
+      "確認臨場盤口是否劇烈變動。"
+    ],
+    "warnings": [
+      "盤口資料待確認",
+      "先發陣容待確認",
+      "傷病資訊待確認"
+    ],
+    "analysisBasis": [
+      "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+      "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+      "只提供分析參考，不執行下注。"
+    ],
+    "generatedBy": "auto-conservative-generator",
+    "generatedAt": "2026-06-13T00:02:00.143Z"
   }
 }

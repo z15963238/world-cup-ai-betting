@@ -74,12 +74,14 @@ for (const match of schedule) {
       match.hasRecommendation = true;
       stats.generatedRecommendationsCount += 1;
       changes.push(`${match.id}: added conservative today/tomorrow/48h AI advice`);
+      if (debug) console.log(`[RECOMMENDATION] generated: ${match.homeTeam} vs ${match.awayTeam} (${match.id})`);
     } else if (action === "updated") {
       match.hasRecommendation = true;
       changes.push(`${match.id}: normalized conservative today/tomorrow/48h AI advice`);
+      if (debug) console.log(`[RECOMMENDATION] normalized: ${match.homeTeam} vs ${match.awayTeam} (${match.id})`);
     } else {
       stats.skippedExistingRecommendationsCount += 1;
-      if (debug) console.log(`[RECOMMENDATION] ${match.id}: skipped existing recommendation`);
+      if (debug) console.log(`[RECOMMENDATION] skipped existing recommendation: ${match.homeTeam} vs ${match.awayTeam} (${match.id})`);
     }
   }
 }
@@ -154,6 +156,9 @@ function ensureConservativeRecommendation(match, target) {
     target[match.id] = buildConservativeRecommendation(match);
     return "created";
   }
+  if (isCompleteGeneratedConservativeRecommendation(target[match.id])) {
+    return "skipped";
+  }
   if (isConservativePlaceholder(target[match.id])) {
     const nextRecommendation = buildConservativeRecommendation(match);
     if (JSON.stringify(target[match.id]) === JSON.stringify(nextRecommendation)) return "skipped";
@@ -164,28 +169,70 @@ function ensureConservativeRecommendation(match, target) {
   return "skipped";
 }
 
+function isCompleteGeneratedConservativeRecommendation(recommendation) {
+  return Boolean(
+    recommendation.generatedBy === "auto-conservative-generator" &&
+      recommendation.matchId &&
+      recommendation.recommendedMarket &&
+      recommendation.recommendationDecision &&
+      typeof recommendation.confidence === "number" &&
+      recommendation.risk &&
+      recommendation.modelView &&
+      recommendation.reasons?.length >= 4 &&
+      recommendation.avoidMarkets?.length >= 3 &&
+      recommendation.preMatchChecklist?.length >= 4 &&
+      recommendation.warnings?.includes("盤口資料待確認") &&
+      recommendation.warnings?.includes("先發陣容待確認") &&
+      recommendation.warnings?.includes("傷病資訊待確認") &&
+      recommendation.analysisBasis?.length >= 1 &&
+      recommendation.generatedAt
+  );
+}
+
 function isConservativePlaceholder(recommendation) {
   return (
+    recommendation.generatedBy === "auto-conservative-generator" ||
     recommendation.pick === "觀察，不急著下注" ||
     recommendation.pick === "小 3.5 球，或暫不建議重點下注" ||
+    recommendation.recommendedMarket === "暫不建議下注，等待臨場盤口" ||
     String(recommendation.modelView || "").includes("盤口資料待確認")
   );
 }
 
 function buildConservativeRecommendation(match) {
+  const recommendedMarket = "暫不建議下注，等待臨場盤口";
+  const warnings = ["盤口資料待確認", "先發陣容待確認", "傷病資訊待確認"];
+  const reasons = [
+    "盤口資料待確認，不能用高信心解讀。",
+    "先發陣容待確認，臨場變動可能影響節奏與進球期望。",
+    "傷病資訊待確認，暫時只採保守方向。",
+    "目前不串球員 API、不串賠率 API，也不登入任何下注平台。"
+  ];
+  const avoidMarkets = ["正確比分", "球員市場", "角球或紅黃牌市場", "高賠冷門與過度追熱門"];
+  const preMatchChecklist = ["確認官方開賽時間。", "確認先發陣容。", "確認傷病資訊。", "確認臨場盤口是否劇烈變動。"];
+  const analysisBasis = [
+    "今日、明日或未來 48 小時內賽事自動產生的保守賽前分析。",
+    "缺少已驗證盤口、先發與傷病資料，因此降低把握度。",
+    "只提供分析參考，不執行下注。"
+  ];
+
   return {
-    pick: "小 3.5 球，或暫不建議重點下注",
+    matchId: match.id,
+    recommendedMarket,
+    recommendationDecision: "wait_for_market",
+    pick: recommendedMarket,
     confidence: 48,
     risk: "中高",
     modelView: `${match.homeTeam} vs ${match.awayTeam} 接近開賽，但盤口資料待確認、先發陣容待確認、傷病資訊待確認。先採保守分析，不做高信心判斷。`,
-    reasons: [
-      "盤口資料待確認，不能用高信心解讀。",
-      "先發陣容待確認，臨場變動可能影響節奏與進球期望。",
-      "傷病資訊待確認，暫時只採保守方向。",
-      "目前不串球員 API、不串賠率 API，也不登入任何下注平台。"
-    ],
-    avoid: ["正確比分", "球員市場", "角球或紅黃牌市場", "高賠冷門與過度追熱門"],
-    checklist: ["確認官方開賽時間。", "確認先發陣容。", "確認傷病資訊。", "確認臨場盤口是否劇烈變動。"]
+    reasons,
+    avoid: avoidMarkets,
+    checklist: preMatchChecklist,
+    avoidMarkets,
+    preMatchChecklist,
+    warnings,
+    analysisBasis,
+    generatedBy: "auto-conservative-generator",
+    generatedAt: new Date().toISOString()
   };
 }
 

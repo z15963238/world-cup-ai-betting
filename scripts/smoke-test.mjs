@@ -62,6 +62,7 @@ const worldCupScheduleRecords = JSON.parse(worldCupScheduleJson);
 const recommendationRecords = JSON.parse(recommendationsJson);
 const scheduleValidation = readFileSync(join(root, "src/lib/data/validateWorldCupSchedule.ts"), "utf8");
 const homePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");
+const analysisStatusHelper = readFileSync(join(root, "src/lib/recommendations/getAnalysisStatus.ts"), "utf8");
 
 for (const id of ["argentina", "france", "brazil"]) {
   if (!teams.includes(`id: "${id}"`)) throw new Error(`Missing mock team id: ${id}`);
@@ -183,8 +184,11 @@ for (const field of ["fetchEspnScheduleData", "ESPN fixtures/results"]) {
 for (const field of ["mergeScheduleData", "hasMatchingFifaAndEspn", "kept existing high-confidence data"]) {
   if (!mergeProvider.includes(field)) throw new Error(`Merge provider missing ${field}`);
 }
-for (const field of ["today/tomorrow/48h", "盤口資料待確認", "confidence: 48"]) {
+for (const field of ["today/tomorrow/48h", "\u76e4\u53e3\u8cc7\u6599\u5f85\u78ba\u8a8d", "confidence: 48"]) {
   if (!updateScript.includes(field)) throw new Error(`Update script missing conservative advice behavior: ${field}`);
+}
+for (const field of ["generated:", "skipped existing recommendation:", "recommendedMarket", "recommendationDecision", "generatedBy"]) {
+  if (!updateScript.includes(field)) throw new Error(`Update script missing full recommendation flow: ${field}`);
 }
 
 const canadaBosnia = getScheduleRecord("canada-bosnia-herzegovina");
@@ -206,8 +210,52 @@ assert(todayTomorrowUpcoming.every((match) => recommendationRecords[match.id]), 
 for (const id of ["qatar-switzerland", "brazil-morocco", "haiti-scotland", "australia-turkiye"]) {
   assert(recommendationRecords[id], `6/14 fixture must have conservative analysis: ${id}`);
   assert(recommendationRecords[id].confidence <= 62, `Conservative confidence must be <= 62: ${id}`);
-  assert(recommendationRecords[id].modelView.includes("盤口資料待確認"), `Conservative advice must mention odds pending: ${id}`);
+  assert(recommendationRecords[id].modelView.includes("\u76e4\u53e3\u8cc7\u6599\u5f85\u78ba\u8a8d"), `Conservative advice must mention odds pending: ${id}`);
 }
+
+function isCompleteRecommendation(recommendation) {
+  return Boolean(
+    recommendation &&
+      recommendation.matchId &&
+      recommendation.recommendedMarket &&
+      recommendation.recommendationDecision &&
+      typeof recommendation.confidence === "number" &&
+      recommendation.risk &&
+      recommendation.modelView &&
+      recommendation.reasons?.length >= 4 &&
+      recommendation.avoidMarkets?.length >= 3 &&
+      recommendation.preMatchChecklist?.length >= 4 &&
+      recommendation.analysisBasis?.length >= 1 &&
+      recommendation.generatedBy &&
+      recommendation.generatedAt
+  );
+}
+
+const requiredConservativeRecommendationIds = ["qatar-switzerland", "brazil-morocco", "haiti-scotland", "australia-turkiye"];
+for (const id of requiredConservativeRecommendationIds) {
+  const recommendation = recommendationRecords[id];
+  assert(isCompleteRecommendation(recommendation), `Conservative analysis must have complete recommendation content: ${id}`);
+  assert(recommendation.recommendationDecision === "wait_for_market", `Conservative recommendation decision must wait for market: ${id}`);
+  assert(recommendation.recommendedMarket === "\u66ab\u4e0d\u5efa\u8b70\u4e0b\u6ce8\uff0c\u7b49\u5f85\u81e8\u5834\u76e4\u53e3", `Conservative recommended market must be explicit: ${id}`);
+  assert(recommendation.confidence <= 50, `Data-limited conservative confidence must be <= 50: ${id}`);
+  assert(recommendation.risk === "\u4e2d\u9ad8", `Data-limited conservative risk must be medium-high: ${id}`);
+  for (const warning of [
+    "\u76e4\u53e3\u8cc7\u6599\u5f85\u78ba\u8a8d",
+    "\u5148\u767c\u9663\u5bb9\u5f85\u78ba\u8a8d",
+    "\u50b7\u75c5\u8cc7\u8a0a\u5f85\u78ba\u8a8d"
+  ]) {
+    assert(recommendation.warnings?.includes(warning), `Conservative recommendation missing warning ${warning}: ${id}`);
+  }
+}
+for (const [id, recommendation] of Object.entries(recommendationRecords)) {
+  if (recommendation.generatedBy === "auto-conservative-generator") {
+    assert(isCompleteRecommendation(recommendation), `Every conservative analysis label must have complete content: ${id}`);
+  }
+}
+assert(analysisStatusHelper.includes('generatedBy === "auto-conservative-generator"'), "analysis status must detect conservative generator");
+assert(analysisStatusHelper.includes('return "missing"'), "missing recommendation must not show conservative analysis");
+assert(!homePage.includes("hasRecommendation ? text.conservativeAnalysis"), "homepage must not derive conservative label from schedule flag");
+assert(homePage.includes("isCompleteRecommendation(getRecommendation(match.id))"), "schedule rows must be clickable only when complete recommendation exists");
 
 const futureRows = worldCupScheduleRecords
   .filter((match) => match.status !== "finished")

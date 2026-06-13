@@ -38,6 +38,7 @@
 - v1.6 added an automated data update scaffold: JSON schedule/recommendation files, dry-run/write update script, GitHub Actions schedule, and auto-update documentation.
 - v1.6.1 added public read-only FIFA/ESPN provider attempts, non-fatal provider fallback, merge protection for high-confidence records, and conservative 24-48 hour AI advice generation.
 - v1.6.4 split UI status semantics into match status, score status, and analysis status; added pending score confirmation fallback; ensured today/tomorrow/48h conservative analysis; and documented the schedule/recommendation flow.
+- v1.6.6 made homepage analysis labels depend on complete `recommendations.json` records instead of schedule flags, added the shared `getAnalysisStatus` helper, and normalized conservative recommendations into full advice cards.
 
 ## Bug Fix Pass
 
@@ -65,6 +66,7 @@
 - `scripts/focused-tests.mjs`: Covers UTC to Taiwan-time formatting for the homepage schedule.
 - `scripts/smoke-test.mjs`: Validates schedule source metadata, score corrections for Mexico vs South Africa and South Korea vs Czechia, prevents the stale draw score, and checks finished/upcoming score rules.
 - `scripts/smoke-test.mjs`: Prevents the incorrect Canada vs Japan and USA vs Ghana fixtures from returning, and verifies Canada vs Bosnia and Herzegovina plus USA vs Paraguay have homepage AI recommendations.
+- `scripts/smoke-test.mjs`: Verifies conservative-analysis rows have complete recommendation content, including reasons, avoid markets, pre-match checklist, warnings, generated metadata, and clickable homepage behavior.
 - `npm run build`: Confirms the app can build with the standard Next.js build path used by Vercel.
 - `node scripts/update-worldcup-data.mjs --dry-run`: Checks the update path without writing files or contacting paid APIs.
 - `scripts/providers/*.mjs`: Attempts public read-only schedule/result fetches without API keys or login.
@@ -99,6 +101,6 @@
 - World Cup schedule data is still manually maintained and has not been connected to the FIFA official API.
 - Future fixtures marked `pending` must be re-verified before being treated as confirmed.
 - Public demo deployment still depends on manually maintained frontend data until official read-only APIs are integrated.
-- Auto-update currently uses a provider scaffold and JSON validation; it does not yet fetch live official data.
+- Auto-update attempts public read-only FIFA/ESPN provider fetches; provider parsing remains best-effort and non-fatal.
 - Public provider parsing depends on page structure and may return no records; failure is intentionally non-fatal.
 - Future 7-day display is limited to verified or listed JSON records until fuller schedule ingestion is added.
